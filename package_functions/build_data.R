@@ -1,18 +1,30 @@
-####Function to take file and make datasets####
-
-build_design_output <- function(folder,
-                              dsets,
-                              design_file,
-                              range_file = NULL,
-                              write_csvs = FALSE,
-                              design_names = NULL,
-                              est_err_ell = TRUE,
-                              ell_err = NULL,
-                              subset_high_pT_pbpb = FALSE,
-                              errors_are_sd = TRUE,
-                              add_header = FALSE,
-                              split_pb_error = FALSE,
-                              full_cor_au = FALSE){
+#### Function to take file and make datasets ####
+### Also makes experimental covariance, and experimental data ###
+build_data <- function(folder,
+                       dsets,
+                       design_file,
+                       range_file = NULL,
+                       write_csvs = FALSE,
+                       design_names = NULL,
+                       est_err_ell = TRUE,
+                       ell_err = NULL,
+                       subset_high_pT_pbpb = FALSE,
+                       errors_are_sd = TRUE,
+                       add_header = FALSE,
+                       split_pb_error = FALSE,
+                       full_cor_au = FALSE){
+  
+  
+  #Covariance Function - Currently Squared Exponential
+  cov_mat <- function(x,ell,lambda,alpha = 2, nugget=0.){
+    #inds <- 1:length(x)
+    
+    out_mat <- lambda^(-1)*(exp(-as.matrix(dist(x)/ell)^alpha) + 
+                              nugget*diag(length(x)))
+    
+    return(out_mat)
+  }
+  
   
   #Loading design input
   #Assume the first line is the column names
@@ -74,7 +86,7 @@ build_design_output <- function(folder,
     }
     
     output_dset[[k]] <- read.table(paste0(folder,current_dset,".dat"),header = add_header)
-    (names(output_dset[[k]]) <- c("pT","RAA_exp","Stat_err","Sys_err",paste0("RAA_",as.character(1:n))))
+    (names(output_dset[[k]]) <- c("pT","RAA_exp","Stat_err","Sys_err",paste0("RAA_",as.character(1:m))))
     
     #Only for MATTER, where we subset to PbPb for pT > 30
     if(subset_high_pT_pbpb & is_PbPb){
@@ -117,9 +129,9 @@ build_design_output <- function(folder,
     }
     
     if(errors_are_sd){
-      sigmas <- au[[i]]$Sys_err
+      sigmas <- output_dset[[k]]$Sys_err
     }else{
-      sigmas <- au[[i]]$Sys_err/1.96
+      sigmas <- output_dset[[k]]$Sys_err/1.96
     }
     
     ## Building covariance matrix from given ell
@@ -131,18 +143,18 @@ build_design_output <- function(folder,
         sys_cov <- outer(sigmas, sigmas)
       }else{
         sys_cov <- outer(sigmas, sigmas)*
-          cov_mat(x = pT_scaled[[i]],ell = ell_err, lambda = 1,alpha = 1.9)
+          cov_mat(x = pT_scaled[[k]],ell = ell_err, lambda = 1,alpha = 1.9)
       }
     }else if(is_PbPb){ #for PbPb, decide to split the error or not
       if(split_pb_error){
         sys_cov <- 0.5*outer(sigmas, sigmas)*
-          cov_mat(x = pT_scaled[[i]],ell = ell_err, lambda = 1,alpha = 1.9) +
+          cov_mat(x = pT_scaled[[k]],ell = ell_err, lambda = 1,alpha = 1.9) +
           
           0.5*outer(sigmas, sigmas)
         
       }else{
         sys_cov <- outer(sigmas, sigmas)*
-          cov_mat(x = pT_scaled[[i]],ell = ell_err, lambda = 1,alpha = 1.9)
+          cov_mat(x = pT_scaled[[k]],ell = ell_err, lambda = 1,alpha = 1.9)
       }
     }else{
       stop('Problem, neither AuAu nor PbPb')
@@ -176,14 +188,14 @@ build_design_output <- function(folder,
   block_covs = as.matrix(bdiag(covs))
   
   
-  return(list(exp_dat = all_exp_dat,
-              mod_dat = all_mod_dat[,-1],
-              scaled_d = scaled_d,
-              block_covs = block_covs,
+  return(list(y_exp = all_exp_dat,
+              Y = all_mod_dat[,-1],
+              scaled_design_input = scaled_d,
+              Sigma_E = block_covs,
               ranges = ranges,
               original_dset_list = output_dset,
               pT_scaled = pT_scaled,
               ell_err = ell_err,
-              design = design))
+              design_input = design))
   
 }

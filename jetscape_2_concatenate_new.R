@@ -427,7 +427,7 @@ mh_cal <- function(niters = 1E4,
   
 }
 
-res <- mh_cal(mod = comp_mod, niters = 1E5,t_kap = 7E-3
+res <- mh_cal(mod = comp_mod, niters = 1E4,t_kap = 7E-3
               #, upper_theta_trunc = 1
                # ,bad_corners = list(list(c('high',NA,'low',NA),
                #                         c(0.82,NA,0.2,NA)),
