@@ -1,5 +1,7 @@
 library(dplyr)
 library(GGally)
+library(magrittr)
+library(stringr)
 
 package_dir <- '/Users/Jake/Box/Research/Computer_Emulation/Shanshan_Project/JETSCAPE_STAT_pkg/'
 setwd(package_dir)
@@ -45,6 +47,16 @@ make_combined_pairplot(param_lists = param_lists,
 ## Prediction Plots
 ##################
 
+# load('/Users/Jake/Box/Research/Computer_Emulation/Shanshan_Project/Results/deliverable_1_26/LBT+MATTER_method_1_check/save_list_m1_all_matern_5_2_5.Rdata')
+# draws <- save_list$res$params
+# 
+# pred_Y <- predict_Y(draws,
+#                     GP_list = GP_list_cur,
+#                     design_output = data_list$Y,
+#                     num_samples = 1E3)
+# 
+# pred_emulator <- pred_Y$pred_mat
+
 pred_emulator <- read.csv('MATTER+LBT_1/posterior_emulator_predictions.csv')
 
 
@@ -64,9 +76,31 @@ centrality_labels = list('AuAu200' = c("0% - 10%", "40% - 50%"),
 
 #Other things needed
 #original data list
-load('MATTER+LBT_1/original_dset_list.Rdata')
+#load('MATTER+LBT_1/original_dset_list.Rdata')
 
 med_vals_vec <- read.csv('MATTER+LBT_1/median_prediction_values.csv')
+
+all_dsets <- c(
+  "AuAu200-cen-00-10"
+  ,"AuAu200-cen-40-50"
+  ,"PbPb2760-cen-00-05"
+  ,"PbPb2760-cen-30-40"
+  ,"PbPb5020-cen-00-10"
+  ,"PbPb5020-cen-30-50"
+)
+
+
+# med_vec <- c()
+# for(i in 1:length(all_dsets)){
+#  med_vec <- c(med_vec, read.table(paste0('MATTER+LBT_1/MATLBT1_',all_dsets[i],'.dat'))[,2]) 
+# }
+# med_vec <- as.matrix(med_vec) %>% t()
+
+output_list <- make_output_list(folder = 'MATTER+LBT_1/output_folder/',
+                                dsets = all_dsets,
+                                subset_high_pT_pbpb = FALSE,
+                                errors_are_sd = TRUE,
+                                add_header = FALSE) #LBT only
 
 plot_draws_together(pred_Y = pred_emulator,                             
                     
@@ -78,8 +112,8 @@ plot_draws_together(pred_Y = pred_emulator,
                     include_median_prediction = TRUE,
                     median_prediction_vals = med_vals_vec,
                     
-                    original_dset_list = original_dset_list,
-                    
+                    #original_dset_list = save_list$comp_mod$all_data$original_dset_list,
+                    original_dset_list = output_list,
                     
                     col_str_vec = c('skyblue','pink'),
                     col_pts_vec = c('darkblue','darkred'),
@@ -88,7 +122,7 @@ plot_draws_together(pred_Y = pred_emulator,
                     alpha_val = 0.05,
                     include_legend = TRUE,
                     include_arrows = TRUE,
-                    legend_spots = replicate(length(labels$centrality_groups),'topleft'),
+                    legend_spots = replicate(length(centrality_groups),'topleft'),
                     
                     
                     save_pics = TRUE,

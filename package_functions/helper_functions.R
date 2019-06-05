@@ -43,6 +43,7 @@ make_cen_names <- function(cen_groups, dset_strings){
   return(cen_names)
 }
 
+
 build_labels <- function(data_file_strings,
                          system_names,
                          data_names,
@@ -81,6 +82,45 @@ build_labels <- function(data_file_strings,
               data_names_to_use = data_names_to_use,
               dset_strings_to_use = dset_strings_to_use))
   
+}
+
+
+make_output_list <- function(folder,
+                             dsets,
+                             subset_high_pT_pbpb = FALSE,
+                             errors_are_sd = TRUE,
+                             add_header = FALSE #LBT only
+){
+  
+  #################################################
+  ### Build covariance matrix and design output ###
+  #################################################
+  
+  output_list <- vector('list',length(dsets))
+  
+  first_concat = TRUE
+  for(k in 1:length(dsets)){
+    (current_dset = dsets[k])
+    (current_experiment = strsplit(current_dset,'-')[[1]][1])
+    
+    is_PbPb = str_detect(current_experiment,'PbPb')
+    
+    output_list[[k]] <- read.table(paste0(folder,current_dset,".dat"),header = add_header)
+    
+    m <- dim(output_list[[k]])[2] - 4
+    
+    (names(output_list[[k]]) <- c("pT","RAA_exp","Stat_err","Sys_err",paste0("RAA_",as.character(1:m))))
+    
+    #Only for MATTER, where we subset to PbPb for pT > 30
+    if(subset_high_pT_pbpb & is_PbPb){
+      print(paste0(current_dset,', subsetting high pT'))
+      output_list[[k]] <- output_list[[k]][which(output_list[[k]]$pT>30),]
+    }
+    
+    
+    
+  }
+  return(output_list)
 }
 
 col_alpha <- function(col_str, alpha){
