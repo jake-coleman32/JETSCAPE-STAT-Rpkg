@@ -1,3 +1,4 @@
+#Custom pairplot function
 gg_heat_pairs <- function(all_data, #Data frame of posterior draws
                           ranges, #List of parameter ranges
                           cols_to_use = 1:ncol(all_data), #In case you want to choose specific parameters
@@ -69,6 +70,7 @@ gg_heat_pairs <- function(all_data, #Data frame of posterior draws
   
 }
 
+#Making pairplot through custom function
 make_combined_pairplot <- function(param_lists, #list of parameter posterior draws
                                    labels, #c('Combined', 'LHC', 'RHIC') usually
                                    ranges, #list of parameter ranges

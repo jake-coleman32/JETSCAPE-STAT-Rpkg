@@ -17,6 +17,7 @@ rescale_posteriors <- function(cal_posteriors,
   return(params)
 }
 
+#Make list with centrality name 
 make_cen_names <- function(cen_groups, dset_strings){
   (cen_names = vector('list',length(cen_groups)))
   (names(cen_names) <- names(cen_groups))
@@ -92,9 +93,9 @@ make_output_list <- function(folder,
                              add_header = FALSE #LBT only
 ){
   
-  #################################################
-  ### Build covariance matrix and design output ###
-  #################################################
+  ###################################
+  ### Build design output list  ###
+  ###################################
   
   output_list <- vector('list',length(dsets))
   
@@ -123,6 +124,7 @@ make_output_list <- function(folder,
   return(output_list)
 }
 
+#Make named colors more translucent
 col_alpha <- function(col_str, alpha){
   if(alpha<0|alpha>1){
     stop('Alpha must be within (0,1)')

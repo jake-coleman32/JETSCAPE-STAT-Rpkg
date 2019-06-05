@@ -1,5 +1,61 @@
 ## Emulator Prediction Plots
 
+#Predict model output given calibration draws, trained GPs, and original design output
+predict_Y <- function(draws, #matrix of unscaled posterior calibration draws, from calibration sampler
+                      GP_list, #list of trained GPs
+                      design_output, #original computer model output for design
+                      num_samples = 1E4){
+  
+  if(num_samples > dim(draws)[1]){
+    stop('Cannot have more samples than posterior draws')
+  }
+  
+  #Renaming for ease of use
+  Y <- design_output
+  
+  n <- dim(Y)[1]
+  q <- dim(Y)[2]
+  
+  y_sd <- apply(Y, 2, sd)
+  y_means <- apply(Y, 2, mean)
+  
+  Y_final <- as.matrix(sweep(Y, 2, y_means, FUN = '-')) %*% diag(1/y_sd)
+  Y_svd <- svd(Y_final)
+  
+  R <- length(GP_list)
+  
+  
+  V_b = Y_svd$v[ ,(R+1):q]
+  S_b = diag(Y_svd$d[(R+1):q])
+  cov_extra <- 1/(n-1) * diag(y_sd) %*% V_b %*% S_b^2 %*% t(V_b) %*% diag(y_sd)
+  
+  
+  Y_pred = exp_predictions(theta = draws,
+                           GP_list = GP_list,
+                           y_sd = y_sd,
+                           y_means = y_means,
+                           Y_svd = Y_svd,
+                           cov_extra = cov_extra)$mean %>% t()
+  
+  
+  Y_pred <- Y_pred[sample(1:dim(Y_pred)[1],num_samples),]  
+  
+  (param_meds <- apply(draws,2,median) %>% t())
+  
+  (med_pred <- exp_predictions(theta = param_meds,
+                               GP_list = GP_list,
+                               y_sd = y_sd,
+                               y_means = y_means,
+                               Y_svd = Y_svd,
+                               cov_extra = cov_extra)$mean %>% t())
+  
+  return(list(pred_mat = Y_pred,
+              med_pred = med_pred))
+  
+}
+
+
+#Making each individual plot
 plot_lines <- function(pred_dat,exp_dat,
                        med_pred_vec = NULL,
                        pT_col = 'pT',
@@ -127,64 +183,10 @@ plot_lines <- function(pred_dat,exp_dat,
   
 }
 
-##Maybe instead, it should take emulator predictions and skip all the other stuff
-## Make the python people do that
 
 
-predict_Y <- function(draws, #matrix of unscaled posterior calibration draws, from calibration sampler
-                      GP_list, #list of trained GPs
-                      design_output, #original computer model output for design
-                      num_samples = 1E4){
-  
-  if(num_samples > dim(draws)[1]){
-    stop('Cannot have more samples than posterior draws')
-  }
-  
-  #Renaming for ease of use
-  Y <- design_output
-  
-  n <- dim(Y)[1]
-  q <- dim(Y)[2]
-  
-  y_sd <- apply(Y, 2, sd)
-  y_means <- apply(Y, 2, mean)
-  
-  Y_final <- as.matrix(sweep(Y, 2, y_means, FUN = '-')) %*% diag(1/y_sd)
-  Y_svd <- svd(Y_final)
-  
-  R <- length(GP_list)
-  
-  
-  V_b = Y_svd$v[ ,(R+1):q]
-  S_b = diag(Y_svd$d[(R+1):q])
-  cov_extra <- 1/(n-1) * diag(y_sd) %*% V_b %*% S_b^2 %*% t(V_b) %*% diag(y_sd)
-  
-    
-    Y_pred = exp_predictions(theta = draws,
-                             GP_list = GP_list,
-                             y_sd = y_sd,
-                             y_means = y_means,
-                             Y_svd = Y_svd,
-                             cov_extra = cov_extra)$mean %>% t()
-    
-    
-    Y_pred <- Y_pred[sample(1:dim(Y_pred)[1],num_samples),]  
-    
-    (param_meds <- apply(draws,2,median) %>% t())
-    
-    (med_pred <- exp_predictions(theta = param_meds,
-                                 GP_list = GP_list,
-                                 y_sd = y_sd,
-                                 y_means = y_means,
-                                 Y_svd = Y_svd,
-                                 cov_extra = cov_extra)$mean %>% t())
-    
-    return(list(pred_mat = Y_pred,
-                med_pred = med_pred))
-    
-  }
 
-
+#Making multiple plots with multiple centralities
 plot_draws_together <- function(pred_Y,                             
                                 
                                 dset_labels = NULL,
@@ -237,6 +239,7 @@ plot_draws_together <- function(pred_Y,
   
   cur_col <- 1
   for(j in 1:length(cen_groups)){
+    print(j)
     (cur_cen_labels = cen_labels[[j]])
     (cur_group = names(cen_groups)[j])
     (K_j <- length(cen_groups[[j]]))
