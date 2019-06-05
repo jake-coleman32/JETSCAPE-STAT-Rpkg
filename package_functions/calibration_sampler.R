@@ -167,6 +167,6 @@ calibration_sampler <- function(niters = 1E4,
   print("ob ratio is")
   print(ob_ratio/(niters + burnin))
   
-  return(list(params = t_out))
+  return(t_out)
   
 }

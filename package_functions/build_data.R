@@ -2,15 +2,15 @@
 ### Also makes experimental covariance, and experimental data ###
 build_data <- function(folder,
                        dsets,
-                       design_file,
-                       range_file = NULL,
+                       design_file, # string path to design file
+                       range_file = NULL, # string path to ranges.Rdata file
                        write_csvs = FALSE,
                        design_names = NULL,
-                       est_err_ell = TRUE,
-                       ell_err = NULL,
+                       est_err_ell = FALSE,
+                       ell_err = 0.2,
                        subset_high_pT_pbpb = FALSE,
                        errors_are_sd = TRUE,
-                       add_header = FALSE,
+                       add_header = FALSE, #LBT only
                        split_pb_error = FALSE,
                        full_cor_au = FALSE){
   
@@ -134,11 +134,11 @@ build_data <- function(folder,
       sigmas <- output_dset[[k]]$Sys_err/1.96
     }
     
-    ## Building covariance matrix from given ell
+   
     print(ell_err)
     
-    ##AuAu systematic correlation
-    if(is_AuAu){
+    ## Building covariance matrix from given ell
+    if(is_AuAu){ ##AuAu systematic correlation
       if(full_cor_au){
         sys_cov <- outer(sigmas, sigmas)
       }else{
